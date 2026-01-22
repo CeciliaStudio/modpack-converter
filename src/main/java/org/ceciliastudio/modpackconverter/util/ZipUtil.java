@@ -3,9 +3,11 @@ package org.ceciliastudio.modpackconverter.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
@@ -49,30 +51,31 @@ public class ZipUtil {
      *
      * @param archivePath ZIP 压缩包路径。
      * @param destination 目标解压目录，不存在时会自动创建。
-     * @throws IOException 解压过程中发生 IO 错误时抛出。
+     * @throws IOException 发生 I/O 错误时抛出。
      */
     public static void unzip(Path archivePath, Path destination) throws IOException {
         if (Files.notExists(destination)) {
             Files.createDirectories(destination);
         }
-        try (InputStream fis = Files.newInputStream(archivePath);
-             ZipInputStream zis = new ZipInputStream(fis)) {
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                Path outPath = destination.resolve(entry.getName()).normalize();
-                if (!outPath.startsWith(destination)) {
-                    throw new IOException("Entry is outside of the target dir: " + entry.getName());
-                }
-                if (entry.isDirectory()) {
-                    Files.createDirectories(outPath);
-                } else {
-                    if (outPath.getParent() != null && Files.notExists(outPath.getParent())) {
-                        Files.createDirectories(outPath.getParent());
+        try (ZipFile zipFile = new ZipFile(archivePath.toFile())) {
+            zipFile.stream().forEach(entry -> {
+                try {
+                    Path outPath = destination.resolve(entry.getName()).normalize();
+                    if (!outPath.startsWith(destination)) {
+                        throw new IOException("Entry is outside of the target dir: " + entry.getName());
                     }
-                    Files.copy(zis, outPath, StandardCopyOption.REPLACE_EXISTING);
+                    if (entry.isDirectory()) {
+                        Files.createDirectories(outPath);
+                    } else {
+                        Files.createDirectories(outPath.getParent());
+                        try (InputStream in = zipFile.getInputStream(entry)) {
+                            Files.copy(in, outPath, StandardCopyOption.REPLACE_EXISTING);
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
-                zis.closeEntry();
-            }
+            });
         }
     }
 
