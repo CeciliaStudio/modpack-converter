@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,10 +39,9 @@ public class Converter {
 
     @SuppressWarnings("SameParameterValue")
     private static void generateModrinthManifest(String name, String versionId, String summary, Map<String, String> dependencies, Path destination) throws IOException {
-        StringBuilder dependenciesString = new StringBuilder();
-        dependencies.forEach((key, value) -> dependenciesString.append('"').append(key).append('"').append(": ")
-                .append('"').append(value).append('"'));
-        String content = "{ \"formatVersion\": 1, \"game\": \"minecraft\", \"name\": \"%s\", \"versionId\": \"%s\", \"summary\": \"%s\", \"files\": [], \"dependencies\": { %s } }".formatted(name, versionId, summary, dependenciesString.toString());
+        List<String> dependencyStrings = new ArrayList<>();
+        dependencies.forEach((key, value) -> dependencyStrings.add("\"%s\": \"%s\"".formatted(key, value)));
+        String content = "{ \"formatVersion\": 1, \"game\": \"minecraft\", \"name\": \"%s\", \"versionId\": \"%s\", \"summary\": \"%s\", \"files\": [], \"dependencies\": { %s } }".formatted(name, versionId, summary, String.join(", ", dependencyStrings));
         Files.writeString(destination, content);
     }
 
