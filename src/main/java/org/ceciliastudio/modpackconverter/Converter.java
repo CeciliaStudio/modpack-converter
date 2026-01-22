@@ -1,6 +1,8 @@
 package org.ceciliastudio.modpackconverter;
 
 import org.ceciliastudio.modpackconverter.util.FileUtil;
+import org.ceciliastudio.modpackconverter.util.I18n;
+import org.ceciliastudio.modpackconverter.util.Logger;
 import org.ceciliastudio.modpackconverter.util.ZipUtil;
 
 import java.io.IOException;
@@ -63,21 +65,21 @@ public class Converter {
         Path mrpackDirectory = Files.createDirectory(tempDirectory.resolve("mrpack"));
         String name = modpackPath.getFileName().toString().replaceFirst("\\.[^.]+$", "");
         try {
-            System.out.println("正在解压整合包文件……");
+            Logger.info("log.extracting_modpack");
             ZipUtil.unzip(modpackPath, tempDirectory);
-            System.out.println("正在查找实例……");
+            Logger.info("log.searching_instance");
             Optional<Path> instanceRoot = findInstanceRoot(tempDirectory);
             if (instanceRoot.isEmpty()) {
-                System.err.println("未找到符合要求的实例目录");
-                throw new RuntimeException("未找到符合要求的实例目录。");
+                Logger.error("log.no_instances_was_found");
+                throw new RuntimeException(I18n.localized("log.no_instances_was_found"));
             }
-            System.out.println("正在生成 Modrinth 整合包……");
+            Logger.info("log.generating_mrpack");
             generateModrinthManifest(name, "未知", "未知", Map.of("minecraft", "1.21"), mrpackDirectory.resolve("modrinth.index.json"));
-            System.out.println("正在拷贝文件……");
+            Logger.info("log.copying_files");
             copyInstanceFiles(instanceRoot.get(), mrpackDirectory.resolve("overrides"));
-            System.out.println("正在创建压缩包……");
+            Logger.info("log.creating_archive");
             ZipUtil.zip(mrpackDirectory, destination);
-            System.out.println("整合包转换完成");
+            Logger.info("log.modpack_convert_finished");
         } finally {
             Files.walkFileTree(tempDirectory, new SimpleFileVisitor<>() {
                 @Override
