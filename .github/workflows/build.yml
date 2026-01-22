@@ -5,6 +5,21 @@ on:
   push:
     branches:
       - main
+    paths:
+      - .github/workflows/**/*
+      - gradle/**/*
+      - src/**/*
+      - build.gradle
+      - settings.gradle
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/**/*
+      - gradle/**/*
+      - src/**/*
+      - build.gradle
+      - settings.gradle
 
 jobs:
   build:
